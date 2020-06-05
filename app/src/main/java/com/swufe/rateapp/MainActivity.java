@@ -2,7 +2,9 @@ package com.swufe.rateapp;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -20,10 +22,21 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SharedPreferences sharedPreferences = getSharedPreferences("myrate", Activity.MODE_PRIVATE);
+
+        dollarRate = sharedPreferences.getFloat("dollar_rate",0.0f);
+        euroRate = sharedPreferences.getFloat("euro_rate",0.0f);
+        wonRate = sharedPreferences.getFloat("won_rate",0.0f);
+
+        Log.i(TAG, "onCreate: sp dollarRate=" + dollarRate);
+        Log.i(TAG, "onCreate: sp euroRate=" + euroRate);
+        Log.i(TAG, "onCreate: sp wonRate=" + wonRate);
         setContentView(R.layout.activity_main);
         setContentView(R.layout.activity_main);
         rmb = (EditText) findViewById(R.id.rmb);
         show = (TextView) findViewById(R.id.show);
+
+
     }
     public void onClick(View btn){
         Log.i(TAG, "onClick: ");
@@ -76,5 +89,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         super.onActivityResult(requestCode, resultCode, data);
+        //将新设置的汇率写到SP里
+        SharedPreferences sharedPreferences = getSharedPreferences("myrate", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putFloat("dollar_rate",dollarRate);
+        editor.putFloat("euro_rate",euroRate);
+        editor.putFloat("won_rate",wonRate);
+        editor.commit();
+        Log.i(TAG, "onActivityResult: 数据已保存到sharedPreferences");
     }
 }
