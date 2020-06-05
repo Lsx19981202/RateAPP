@@ -27,6 +27,9 @@ import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements Runnable{
     private final String TAG = "Rate";
@@ -36,13 +39,22 @@ public class MainActivity extends AppCompatActivity implements Runnable{
     EditText rmb;
     TextView show;
     Handler handler;
-    private String todayStr = "";
+    private String updateDate = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Thread thread = new Thread(this);
-        thread.start();
+        Date today = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        final String todayStr = sdf.format(today);
+        if(!todayStr.equals(updateDate)){
+            Log.i(TAG, "onCreate: 需要更新");
+            //开启子线程
+            Thread t = new Thread(this);
+            t.start();
+        }else{
+            Log.i(TAG, "onCreate: 不需要更新");
+        }
         handler = new Handler(){
             @Override
             public void handleMessage(Message msg) {
@@ -72,6 +84,7 @@ public class MainActivity extends AppCompatActivity implements Runnable{
         dollarRate = sharedPreferences.getFloat("dollar_rate",0.0f);
         euroRate = sharedPreferences.getFloat("euro_rate",0.0f);
         wonRate = sharedPreferences.getFloat("won_rate",0.0f);
+        updateDate = sharedPreferences.getString("update_date","");
 
         Log.i(TAG, "onCreate: sp dollarRate=" + dollarRate);
         Log.i(TAG, "onCreate: sp euroRate=" + euroRate);
