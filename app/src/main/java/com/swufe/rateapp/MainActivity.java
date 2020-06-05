@@ -15,6 +15,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -31,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements Runnable{
     EditText rmb;
     TextView show;
     Handler handler;
+    private String todayStr = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,16 +45,29 @@ public class MainActivity extends AppCompatActivity implements Runnable{
         thread.start();
         handler = new Handler(){
             @Override
-            public void handleMessage(@NonNull Message msg) {
+            public void handleMessage(Message msg) {
                 if(msg.what==5){
-                    String str = (String) msg.obj;
-                    Log.i(TAG, "handleMessage: getMessage msg = " + str);
-                    show.setText(str);
+                    Bundle bdl = (Bundle) msg.obj;
+                    dollarRate = bdl.getFloat("dollar-rate");
+                    euroRate = bdl.getFloat("euro-rate");
+                    wonRate = bdl.getFloat("won-rate");
+
+                    Log.i(TAG, "handleMessage: dollarRate:" + dollarRate);
+                    Log.i(TAG, "handleMessage: euroRate:" + euroRate);
+                    Log.i(TAG, "handleMessage: wonRate:" + wonRate);
+                    Toast.makeText(MainActivity.this, "汇率已更新", Toast.LENGTH_SHORT).show();
                 }
                 super.handleMessage(msg);
             }
         };
         SharedPreferences sharedPreferences = getSharedPreferences("myrate", Activity.MODE_PRIVATE);
+        SharedPreferences sp = getSharedPreferences("myrate", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putFloat("dollar_rate",dollarRate);
+        editor.putFloat("euro_rate",euroRate);
+        editor.putFloat("won_rate",wonRate);
+        editor.putString("update_date",todayStr);
+        editor.apply();
 
         dollarRate = sharedPreferences.getFloat("dollar_rate",0.0f);
         euroRate = sharedPreferences.getFloat("euro_rate",0.0f);
@@ -127,34 +146,74 @@ public class MainActivity extends AppCompatActivity implements Runnable{
 
     @Override
     public void run() {
-        Log.i(TAG, "run: run()......");
-        for(int i=1;i<3;i++){
-            Log.i(TAG, "run: i=" + i);
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        URL url = null;
+//        Log.i(TAG, "run: run()......");
+////        for(int i=1;i<3;i++){
+////            Log.i(TAG, "run: i=" + i);
+////            try {
+////                Thread.sleep(2000);
+////            } catch (InterruptedException e) {
+////                e.printStackTrace();
+////            }
+////        }
+
+
+//        try {
+////            url = new URL("http://www.usd-cny.com/icbc.htm");
+////            HttpURLConnection http = (HttpURLConnection) url.openConnection();
+////            InputStream in = http.getInputStream();
+////
+////            String html = inputStream2String(in);
+////            Log.i(TAG, "run: html=" + html);
+////            Document doc = Jsoup.parse(html);
+////
+////        } catch (MalformedURLException e) {
+////            e.printStackTrace();
+////        } catch (IOException e) {
+////            e.printStackTrace();
+////        }
+        Bundle bundle = new Bundle();
+        Document doc = null;
+//        URL url = null;
         try {
-            url = new URL("http://www.usd-cny.com/icbc.htm");
-            HttpURLConnection http = (HttpURLConnection) url.openConnection();
-            InputStream in = http.getInputStream();
+            String url = "http://www.usd-cny.com/bankofchina.htm";
+            doc = Jsoup.connect(url).get();
+            Log.i(TAG, "run: " + doc.title());
+            Elements tables = doc.getElementsByTag("table");
 
-            String html = inputStream2String(in);
-            Log.i(TAG, "run: html=" + html);
+            Element table6 = tables.get(5);
+            //Log.i(TAG, "run: table6=" + table6);
+            //获取TD中的数据
+            Elements tds = table6.getElementsByTag("td");
+            for(int i=0;i<tds.size();i+=8){
+                Element td1 = tds.get(i);
+                Element td2 = tds.get(i+5);
 
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
+                String str1 = td1.text();
+                String val = td2.text();
+
+                Log.i(TAG, "run: " + str1 + "==>" + val);
+
+                float v = 100f / Float.parseFloat(val);
+                if("美元".equals(str1)){
+                    bundle.putFloat("dollar-rate", v);
+                }else if("欧元".equals(str1)){
+                    bundle.putFloat("euro-rate", v);
+                }else if("韩国元".equals(str1)){
+                    bundle.putFloat("won-rate", v);
+                }
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
-//获取Msg对象，用于返回主线程
         Message msg = handler.obtainMessage(5);
-//msg.what = 5;
-        msg.obj = "Hello from run()";
+        msg.obj = bundle;
         handler.sendMessage(msg);
+//获取Msg对象，用于返回主线程
+//        Message msg = handler.obtainMessage(5);
+////msg.what = 5;
+//        msg.obj = "Hello from run()";
+//        handler.sendMessage(msg);
     }
     private String inputStream2String(InputStream inputStream) throws IOException {
         final int bufferSize = 1024;
