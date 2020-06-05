@@ -5,4 +5,6 @@
     <string name="btn_euro_label">Euro</string>
     <string name="btn_won_label">Won</string>
     <string name="rmb_hint_label">Input RMB</string>
+    <string name="btn_save_label">SAVE</string>
+    <string name="btn_opencfg_label">CONFIG</string>
 </resources>
